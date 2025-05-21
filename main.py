@@ -1,4 +1,5 @@
 import math
+import matplotlib.pyplot as plt
 
 room_width = 10
 room_length = 8
@@ -10,7 +11,7 @@ walls = [
     ((0, room_length), (0, 0)), # Left wall
 ]
 
-sound_source = (room_width / 5, room_length / 21) # Centre of the room just for an easy starting point
+sound_source = (room_width / 2, room_length / 2) # Centre of the room just for an easy starting point
 
 def generate_rays(source, angle_step=20):
     rays = []
@@ -61,3 +62,24 @@ for ray in rays:
 
     if closest_hit:
         ray['path'].append(closest_hit)
+
+fig, ax = plt.subplots()
+for wall in walls:
+    (x1, y1), (x2, y2) = wall
+    ax.plot([x1, x2], [y1, y2], 'k-', linewidth=2)
+
+for ray in rays:
+    for i in range(len(ray['path']) - 1):
+        x0, y0 = ray['path'][i]
+        x1, y1 = ray['path'][i + 1]
+        ax.plot([x0, x1], [y0, y1], 'r--', alpha=0.6)
+
+ax.plot(sound_source[0], sound_source[1], 'bo', label='Sound Source')
+
+ax.set_aspect('equal')
+ax.set_xlim(-1, room_width + 1)
+ax.set_ylim(-1, room_length + 1)
+plt.title('Audio Ray Tracing in a Room')
+plt.legend()
+plt.grid(True)
+plt.show()
