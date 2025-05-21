@@ -5,15 +5,15 @@ room_width = 10
 room_length = 8
 
 walls = [
-    ((0, 0), (room_width, 0)), # Bottom wall
-    ((room_width, 0), (room_width, room_length)), # Right wall
-    ((room_width, room_length), (0, room_length)), # Top wall
-    ((0, room_length), (0, 0)), # Left wall
+    ((0, 0), (room_width, 0), 0.2), # Bottom wall - low absorption
+    ((room_width, 0), (room_width, room_length), 0.5), # Right wall - medium absorption
+    ((room_width, room_length), (0, room_length), 0.8), # Top wall - high apsorption
+    ((0, room_length), (0, 0), 1.0), # Left wall - fully aborbs
 ]
 
-sound_source = (room_width / 2, room_length / 2) # Centre of the room just for an easy starting point
+source = (room_width / 2, room_length / 2) # Centre of the room just for an easy starting point
 
-def generate_rays(source, angle_step=20):
+def generate_rays(source, angle_step):
     rays = []
     for angle in range(0, 360, angle_step):
         rad = math.radians(angle)
@@ -45,36 +45,65 @@ def get_ray_wall_intersection(ray_origin, ray_dir, wall_start, wall_end):
     
     return None
 
-rays = generate_rays(sound_source, angle_step=20)
+def reflect_ray(incoming, normal):
+    dot_product = incoming[0] * normal[0] + incoming[1] * normal[1]
+    reflected = (incoming[0] - 2 * dot_product * normal[0], incoming[1] - 2 * dot_product * normal[1])
+    return reflected
+
+def get_wall_normal(wall_start, wall_end):
+    wall_dx = wall_end[0] - wall_start[0]
+    wall_dy = wall_end[1] - wall_start[1]
+    normal = (-wall_dy, wall_dx)
+    length = math.hypot(*normal)
+    return (normal[0] / length, normal[1] / length)
+
+rays = generate_rays(source, 30)
 
 for ray in rays:
     origin = ray['origin']
     direction = ray['direction']
-    closest_hit = None
-    closest_distance = float('inf')
-    for wall in walls:
-        result = get_ray_wall_intersection(origin, direction, wall[0], wall[1])
-        if result:
-            x, y, t = result
-            if t < closest_distance:
-                closest_distance = t
-                closest_hit = (x, y)
+    energy = 1.0
 
-    if closest_hit:
+    while energy > 0.01:
+        closest_hit = None
+        closest_distance = float('inf')
+        closest_wall = None
+        wall_absorption = 0.0
+
+        for wall in walls:
+            result = get_ray_wall_intersection(origin, direction, wall[0], wall[1])
+            if result:
+                x, y, t = result
+                if t < closest_distance:
+                    closest_distance = t
+                    closest_hit = (x, y)
+                    closest_wall = wall
+                    wall_absorption = wall[2]
+
+        if not closest_hit:
+            break
+
         ray['path'].append(closest_hit)
+        energy *= (1 - wall_absorption)
+        normal = get_wall_normal(closest_wall[0], closest_wall[1])
+        direction = reflect_ray(direction, normal)
+        epsilon = 1e-6
+        origin = (closest_hit[0] + direction[0] * epsilon, closest_hit[1] + direction[1] * epsilon)
 
 fig, ax = plt.subplots()
 for wall in walls:
-    (x1, y1), (x2, y2) = wall
+    (x1, y1), (x2, y2), _ = wall
     ax.plot([x1, x2], [y1, y2], 'k-', linewidth=2)
 
 for ray in rays:
+    energy = 1.0
     for i in range(len(ray['path']) - 1):
         x0, y0 = ray['path'][i]
         x1, y1 = ray['path'][i + 1]
-        ax.plot([x0, x1], [y0, y1], 'r--', alpha=0.6)
+        ax.plot([x0, x1], [y0, y1], 'r--', alpha=energy, linewidth=energy * 3)
+        energy *= (1 - 0.5)
 
-ax.plot(sound_source[0], sound_source[1], 'bo', label='Sound Source')
+ax.plot(source[0], source[1], 'bo', label='Source')
 
 ax.set_aspect('equal')
 ax.set_xlim(-1, room_width + 1)
