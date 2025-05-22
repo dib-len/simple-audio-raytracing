@@ -6,10 +6,15 @@ room_length = 8
 
 walls = [
     ((0, 0), (room_width, 0), 0.2), # Bottom wall - low absorption
-    ((room_width, 0), (room_width, room_length), 0.5), # Right wall - medium absorption
+    ((room_width, 0), (room_width, room_length / 2), 0.5), # Bottom right wall - medium absorption
+    ((room_width, room_length / 2), (room_width+5, room_length / 2), 0.4), 
+    ((room_width+5, room_length / 2), (room_width+5, room_length + 2), 0.4), 
+    ((room_width+5, room_length + 2), (room_width, room_length + 2), 0.4), 
+    ((room_width, room_length + 2), ((room_width, room_length)), 0.4), 
     ((room_width, room_length), (0, room_length), 0.8), # Top wall - high apsorption
     ((0, room_length), (0, 0), 1.0), # Left wall - fully aborbs
 ]
+
 
 source = (room_width / 2, room_length / 2) # Centre of the room just for an easy starting point
 
@@ -113,8 +118,8 @@ for ray in rays:
 ax.plot(source[0], source[1], 'bo', label='Source')
 
 ax.set_aspect('equal')
-ax.set_xlim(-1, room_width + 1)
-ax.set_ylim(-1, room_length + 1)
+ax.set_xlim(-1, room_width + 6)
+ax.set_ylim(-1, room_length + 3)
 plt.title('Audio Ray Tracing in a Room')
 plt.legend()
 plt.grid(True)
