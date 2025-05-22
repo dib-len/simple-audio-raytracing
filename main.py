@@ -57,14 +57,14 @@ def get_wall_normal(wall_start, wall_end):
     length = math.hypot(*normal)
     return (normal[0] / length, normal[1] / length)
 
-rays = generate_rays(source, 30)
+rays = generate_rays(source, 10)
 
 for ray in rays:
     origin = ray['origin']
     direction = ray['direction']
     energy = 1.0
 
-    while energy > 0.01:
+    while energy > 0.1:
         closest_hit = None
         closest_distance = float('inf')
         closest_wall = None
@@ -90,18 +90,25 @@ for ray in rays:
         epsilon = 1e-6
         origin = (closest_hit[0] + direction[0] * epsilon, closest_hit[1] + direction[1] * epsilon)
 
+        if energy < 0.1:
+            ray['death_point'] = origin
+
 fig, ax = plt.subplots()
 for wall in walls:
-    (x1, y1), (x2, y2), _ = wall
-    ax.plot([x1, x2], [y1, y2], 'k-', linewidth=2)
+    (x1, y1), (x2, y2), absorption = wall
+    wall_thickness = 1 + absorption * 3
+    ax.plot([x1, x2], [y1, y2], 'k-', linewidth=wall_thickness)
 
 for ray in rays:
     energy = 1.0
     for i in range(len(ray['path']) - 1):
         x0, y0 = ray['path'][i]
         x1, y1 = ray['path'][i + 1]
-        ax.plot([x0, x1], [y0, y1], 'r--', alpha=energy, linewidth=energy * 3)
-        energy *= (1 - 0.5)
+        ax.plot([x0, x1], [y0, y1], 'r--', alpha=energy, linewidth=energy * 2)
+        energy *= (1 - 0.35)
+    if 'death_point' in ray:
+        x, y = ray['death_point']
+        ax.plot(x, y, 'rx', markersize=10, alpha=1)
 
 ax.plot(source[0], source[1], 'bo', label='Source')
 
